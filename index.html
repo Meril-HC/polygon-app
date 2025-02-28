@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Polygon.io Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    pre {
+      background: #eee;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Options Aggregates Data</h1>
+  <button id="fetchData">Fetch Data</button>
+  <pre id="output"></pre>
+  
+  <script>
+    document.getElementById('fetchData').addEventListener('click', () => {
+      fetch('/api/options-aggregates')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('output').textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+          document.getElementById('output').textContent = 'Error: ' + error;
+        });
+    });
+  </script>
+</body>
+</html>
