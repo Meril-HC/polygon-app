@@ -240,5 +240,44 @@
     
     document.getElementById("responseForm").addEventListener("submit", generateResponse);
   </script>
+  <script>
+  // Disable right-click menu
+  document.addEventListener('contextmenu', event => event.preventDefault());
+
+  // Disable certain keyboard shortcuts
+  document.addEventListener('keydown', function(event) {
+    if (
+      event.ctrlKey && (event.key === 'u' || event.key === 'U' ||  // Disable View Source
+      event.key === 's' || event.key === 'S' ||  // Disable Save
+      event.key === 'p' || event.key === 'P' ||  // Disable Print
+      event.key === 'j' || event.key === 'J' ||  // Disable Console
+      event.key === 'i' || event.key === 'I') || // Disable Inspect
+      event.key === 'F12' // Disable DevTools
+    ) {
+      event.preventDefault();
+    }
+  });
+
+  // Prevent opening DevTools via Console
+  (function() {
+    let devtoolsOpen = false;
+    let element = new Image();
+    Object.defineProperty(element, 'id', {
+      get: function() {
+        devtoolsOpen = true;
+        throw new Error("DevTools is disabled.");
+      }
+    });
+
+    setInterval(() => {
+      devtoolsOpen = false;
+      console.log('%c', element);
+      if (devtoolsOpen) {
+        document.body.innerHTML = "<h2 style='color:red; text-align:center;'>DevTools is disabled.</h2>";
+      }
+    }, 1000);
+  })();
+</script>
+
 </body>
 </html>
