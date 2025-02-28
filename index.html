@@ -1,48 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Polygon.io Data</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deepseek Chat Response Generator</title>
   <style>
+    /* Global Styles */
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Roboto', sans-serif;
       background: #f9f9f9;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
     }
-    h1 {
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 90%;
+    }
+    .container h1 {
       text-align: center;
+      margin-bottom: 20px;
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      margin-bottom: 8px;
+      font-weight: bold;
+    }
+    input, select {
+      padding: 10px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
     }
     button {
-      padding: 10px 20px;
+      padding: 12px;
+      background: #007bff;
+      border: none;
+      color: #fff;
       font-size: 16px;
+      border-radius: 4px;
       cursor: pointer;
     }
-    pre {
-      background: #eee;
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: auto;
+    button:hover {
+      background: #0056b3;
+    }
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      position: relative;
+    }
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #aaa;
+    }
+    .close-btn:hover {
+      color: #000;
     }
   </style>
-</head>
-<body>
-  <h1>Options Aggregates Data</h1>
-  <button id="fetchData">Fetch Data</button>
-  <pre id="output"></pre>
-  
   <script>
-    document.getElementById('fetchData').addEventListener('click', () => {
-      fetch('/api/options-aggregates')
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(error => {
-          document.getElementById('output').textContent = 'Error: ' + error;
+    // Function to close the modal
+    function closeModal() {
+      document.getElementById('resultModal').style.display = 'none';
+    }
+    
+    // Function to open the modal with provided content
+    function openModal(content) {
+      document.querySelector('.modal-body').innerHTML = content;
+      document.getElementById('resultModal').style.display = 'flex';
+    }
+    
+    // Function to generate a Deepseek API response
+    async function generateResponse(event) {
+      event.preventDefault();
+      
+      const productName = document.getElementById('product-name').value.trim();
+      const requirement = document.getElementById('requirement').value;
+      
+      if (!productName || !requirement) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+      
+      // Display a loading message
+      openModal(`<p>Generating response for <strong>${productName}</strong> with <strong>${requirement}</strong>...</p>`);
+      
+      // Prepare the payload for Deepseek API call
+      const payload = {
+        model: "gpt-4o-mini",
+        store: true,
+        messages: [
+          { role: "system", content: "You are a helpful assistant." },
+          { role: "user", content: `Generate a response similar to ChatGPT for product "${productName}" with the requirement "${requirement}".` }
+        ],
+        temperature: 0.7,
+        max_tokens: 200
+      };
+      
+      // Deepseek API endpoint and your API key
+      const apiUrl = "https://api.deepseek.com/v1/chat/completions";
+      const apiKey = "sk-29c4127025bc4a59a05c5ad99e6aac9c";
+      
+      try {
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(payload)
         });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error: ${response.status} ${response.statusText}. ${errorText}`);
+        }
+        
+        const data = await response.json();
+        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
+          const chatResponse = data.choices[0].message.content;
+          openModal(`<h2>Response</h2><p>${chatResponse}</p>`);
+        } else {
+          openModal(`<p>No response generated. Please try again.</p>`);
+        }
+      } catch (error) {
+        console.error(error);
+        openModal(`<p>Error generating response: ${error.message}</p>`);
+      }
+    }
+    
+    // Attach the form submit event when the DOM is fully loaded
+    document.addEventListener("DOMContentLoaded", function() {
+      document.getElementById("chatForm").addEventListener("submit", generateResponse);
     });
   </script>
+</head>
+<body>
+  <div class="container">
+    <h1>Deepseek Chat Response Generator</h1>
+    <form id="chatForm">
+      <label for="product-name">Enter Product Name</label>
+      <input type="text" id="product-name" placeholder="Enter Product Name" required>
+      
+      <label for="requirement">Requirement</label>
+      <select id="requirement" required>
+        <option value="">Select Requirement</option>
+        <option value="Functional Requirement">Functional Requirement</option>
+        <option value="Other Requirement">Other Requirement</option>
+      </select>
+      
+      <button type="submit">Generate Response</button>
+    </form>
+  </div>
+  
+  <!-- Modal for displaying API response -->
+  <div id="resultModal" class="modal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeModal()">&times;</span>
+      <div class="modal-body"></div>
+    </div>
+  </div>
 </body>
 </html>
