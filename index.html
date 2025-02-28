@@ -2,27 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Deepseek Chat Response Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gemini AI: Sectioned & Formatted Requirements</title>
   <style>
-    /* Global Styles */
     body {
       font-family: 'Roboto', sans-serif;
       background: #f9f9f9;
-      margin: 0;
-      padding: 0;
+      padding: 20px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
     }
     .container {
       background: #fff;
       padding: 30px;
       border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       max-width: 500px;
       width: 90%;
+      margin-bottom: 20px;
     }
     .container h1 {
       text-align: center;
@@ -55,122 +54,25 @@
     button:hover {
       background: #0056b3;
     }
-    /* Modal Styling */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.5);
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
+    .output-box {
       background: #fff;
       padding: 20px;
       border-radius: 8px;
-      max-width: 600px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-width: 500px;
       width: 90%;
-      position: relative;
-    }
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 24px;
-      cursor: pointer;
-      color: #aaa;
-    }
-    .close-btn:hover {
-      color: #000;
+      margin-top: 20px;
+      line-height: 1.6;
+      white-space: pre-wrap;
     }
   </style>
-  <script>
-    // Function to close the modal
-    function closeModal() {
-      document.getElementById('resultModal').style.display = 'none';
-    }
-    
-    // Function to open the modal with provided content
-    function openModal(content) {
-      document.querySelector('.modal-body').innerHTML = content;
-      document.getElementById('resultModal').style.display = 'flex';
-    }
-    
-    // Function to generate a Deepseek API response
-    async function generateResponse(event) {
-      event.preventDefault();
-      
-      const productName = document.getElementById('product-name').value.trim();
-      const requirement = document.getElementById('requirement').value;
-      
-      if (!productName || !requirement) {
-        alert("Please fill in all required fields.");
-        return;
-      }
-      
-      // Display a loading message
-      openModal(`<p>Generating response for <strong>${productName}</strong> with <strong>${requirement}</strong>...</p>`);
-      
-      // Prepare the payload for Deepseek API call
-      const payload = {
-        model: "gpt-4o-mini",
-        store: true,
-        messages: [
-          { role: "system", content: "You are a helpful assistant." },
-          { role: "user", content: `Generate a response similar to ChatGPT for product "${productName}" with the requirement "${requirement}".` }
-        ],
-        temperature: 0.7,
-        max_tokens: 200
-      };
-      
-      // Deepseek API endpoint and your API key
-      const apiUrl = "https://api.deepseek.com/v1/chat/completions";
-      const apiKey = "sk-29c4127025bc4a59a05c5ad99e6aac9c";
-      
-      try {
-        const response = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Error: ${response.status} ${response.statusText}. ${errorText}`);
-        }
-        
-        const data = await response.json();
-        if (data.choices && data.choices.length > 0 && data.choices[0].message) {
-          const chatResponse = data.choices[0].message.content;
-          openModal(`<h2>Response</h2><p>${chatResponse}</p>`);
-        } else {
-          openModal(`<p>No response generated. Please try again.</p>`);
-        }
-      } catch (error) {
-        console.error(error);
-        openModal(`<p>Error generating response: ${error.message}</p>`);
-      }
-    }
-    
-    // Attach the form submit event when the DOM is fully loaded
-    document.addEventListener("DOMContentLoaded", function() {
-      document.getElementById("chatForm").addEventListener("submit", generateResponse);
-    });
-  </script>
 </head>
 <body>
   <div class="container">
-    <h1>Deepseek Chat Response Generator</h1>
-    <form id="chatForm">
-      <label for="product-name">Enter Product Name</label>
-      <input type="text" id="product-name" placeholder="Enter Product Name" required>
+    <h1>Gemini AI: Functional Requirement Generator</h1>
+    <form id="responseForm">
+      <label for="product">Enter Product Name</label>
+      <input type="text" id="product" placeholder="Enter Product Name" required />
       
       <label for="requirement">Requirement</label>
       <select id="requirement" required>
@@ -183,12 +85,160 @@
     </form>
   </div>
   
-  <!-- Modal for displaying API response -->
-  <div id="resultModal" class="modal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closeModal()">&times;</span>
-      <div class="modal-body"></div>
-    </div>
-  </div>
+  <!-- Output Box for displaying the response -->
+  <div id="output" class="output-box"></div>
+  
+  <script>
+    /**
+     * Parse Gemini response text into sections with headings and bullet points.
+     * Expected format:
+     *   **Heading:**
+     *   - Bullet point 1
+     *   - Bullet point 2
+     *   **Next Heading:**
+     *   - Bullet point ...
+     *
+     * This function removes double asterisks, trims extra spaces, and creates
+     * an HTML string with bold headings and bullet points. No limit is set on
+     * the number of bullet points.
+     */
+    function parseSectionsAndBullets(rawText) {
+      // Remove any '**' used for bold formatting.
+      let text = rawText.replace(/\*\*/g, '');
+
+      // Split into lines and trim.
+      const lines = text.split('\n').map(line => line.trim()).filter(line => line);
+
+      let htmlOutput = '';
+      let currentHeading = '';
+      let bullets = [];
+
+      // Helper to flush the current section.
+      function flushSection() {
+        if (!currentHeading && bullets.length === 0) return;
+        // Create a bold heading.
+        htmlOutput += `<strong style="display:block; margin-top:1em;">${currentHeading}</strong>\n`;
+        htmlOutput += '<ul style="margin-top: 0.5em; margin-bottom: 1em; padding-left: 20px;">';
+        bullets.forEach(bullet => {
+          htmlOutput += `<li style="margin-bottom: 6px;">${bullet}</li>`;
+        });
+        htmlOutput += '</ul>';
+        currentHeading = '';
+        bullets = [];
+      }
+
+      lines.forEach(line => {
+        // Check if line is a heading line (ends with a colon).
+        const headingMatch = line.match(/^(.*?):$/);
+        if (headingMatch) {
+          // Flush previous section.
+          flushSection();
+          currentHeading = headingMatch[1].trim();
+        } else if (line.startsWith('-')) {
+          // Treat line as a bullet, remove the leading '-' and trim.
+          const bulletText = line.replace(/^-+/, '').trim();
+          bullets.push(bulletText);
+        } else {
+          // If not a heading or bullet, add as additional bullet content.
+          bullets.push(line);
+        }
+      });
+
+      // Flush the final section.
+      flushSection();
+
+      return htmlOutput || 'No structured sections found.';
+    }
+
+    // Function to simulate a typing animation.
+    function typeText(element, text, speed) {
+      let i = 0;
+      element.innerHTML = "";
+      const interval = setInterval(() => {
+        if (i < text.length) {
+          element.innerHTML = text.substring(0, i + 1);
+          i++;
+        } else {
+          clearInterval(interval);
+        }
+      }, speed);
+    }
+    
+    // Async function to generate the response using the Gemini API.
+    async function generateResponse(event) {
+      event.preventDefault();
+      
+      const product = document.getElementById("product").value.trim();
+      const requirement = document.getElementById("requirement").value;
+      const output = document.getElementById("output");
+      
+      if (!product || !requirement) {
+        output.innerHTML = "<p>Please fill in all required fields.</p>";
+        return;
+      }
+      
+      // Construct query text based on the requirement.
+      let queryText = "";
+      if (requirement === "Functional Requirement") {
+        queryText = `Generate a concise list of key functional requirements for ${product}, with each section having a bold heading and bullet points.`;
+      } else {
+        queryText = `Generate a concise list of key other requirements for ${product}, with each section having a bold heading and bullet points.`;
+      }
+      
+      // Display a generating message.
+      typeText(output, `Generating response for "${product}" (${requirement})...\n\n`, 20);
+      
+      // Gemini API endpoint with your API key.
+      const apiKey = "AIzaSyBChHrbcJrMYBPAvuaCJEcgVZvpq7ZLzCg";
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      
+      // Prepare the payload.
+      const payload = {
+        "contents": [{
+          "parts": [{
+            "text": queryText
+          }]
+        }]
+      };
+      
+      try {
+        const response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Extract text from the first candidate.
+        let generatedText = "";
+        if (data.candidates && data.candidates.length > 0) {
+          const firstCandidate = data.candidates[0];
+          if (firstCandidate.content && firstCandidate.content.parts) {
+            generatedText = firstCandidate.content.parts[0].text || "";
+          } else if (firstCandidate.output) {
+            generatedText = firstCandidate.output;
+          }
+        } else {
+          generatedText = "No text found in the Gemini response.";
+        }
+        
+        // Parse the text into sections with bullet points.
+        const formattedHTML = parseSectionsAndBullets(generatedText);
+        // Display the formatted HTML with a typing effect.
+        typeText(output, formattedHTML, 10);
+      } catch (error) {
+        output.innerHTML = `<p>Error fetching data: ${error.message}</p>`;
+      }
+    }
+    
+    document.getElementById("responseForm").addEventListener("submit", generateResponse);
+  </script>
 </body>
 </html>
